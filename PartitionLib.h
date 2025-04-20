@@ -11,10 +11,10 @@
 using namespace std;
 
 struct State {
-    int coins;         // Количество топлива
+    int fuel;         // Количество топлива
     int distance;      // Пройденное расстояние
     double value;      // Отношение монет к расстоянию (стоимость)
-    unordered_set<int> visited;
+    set<int> visited;
     vector<int> route;
 
     bool operator<(const State& other) const {
@@ -26,21 +26,21 @@ struct State {
         return distance > other.distance;
     }
 
-    State(int c, int d, double val, unordered_set<int>& v, vector<int>& r) : coins(c), distance(d), value(val), visited(v), route(r){}
+    State(int c, int d, double val, set<int>& v, vector<int>& r) : fuel(c), distance(d), value(val), visited(v), route(r.begin(), r.end()){}
 
     State(const State& s) {
-        coins = s.coins;
+        fuel = s.fuel;
         distance = s.distance;
         value = s.value;
-        visited = unordered_set<int>(s.visited);
-        route = vector<int>(s.route);
+        visited = set<int>(s.visited);
+        route = vector<int>(s.route.begin(), s.route.end());
     }
 
     State() {
-        coins = 0;
+        fuel = 0;
         distance = 0;
         value = 0.0;
-        visited = unordered_set<int>();
+        visited = set<int>();
         visited.insert(0);
         route = vector<int>();
         route.push_back(0);
@@ -77,7 +77,7 @@ int findMinLengthCycle(const vector<vector<int>>& matrix,  vector<int>* vertices
     return min_weight;
 }
 
-vector<int> findOptimalPath(const vector<vector<int>>& edges, const vector<int>& demand, int Qmax, set<int>& restASU) {
+State findOptimalPath(const vector<vector<int>>& edges, const vector<int>& demand, int Qmax, set<int>& restASU) {
     vector<int> rest(restASU.begin(), restASU.end());
     int n = rest.size()-1;
     vector<vector<State*>> dp = vector<vector<State*>>(n + 1);
@@ -97,10 +97,10 @@ vector<int> findOptimalPath(const vector<vector<int>>& edges, const vector<int>&
             } else {
                 State* s = new State(*dp[i-1][j-demand[i]]);
                 s->visited.insert(rest[i]);
-                s->coins += demand[rest[i]];
+                s->fuel += demand[rest[i]];
                 s->route.push_back(rest[i]);
                 s->distance = findMinLengthCycle(edges, &s->route);
-                s->value = (float)s->coins / pow(s->distance, 1.0/s->route.size());
+                s->value = (float)s->fuel / pow(s->distance, 1.0 / s->route.size());
                 dp[i][j] = (s->value > dp[i-1][j-demand[i]]->value) ? s : dp[i-1][j];
                 if (dp[i][j]->value >= dp[i_max][j_max]->value) {
                     i_max = i;
@@ -115,7 +115,7 @@ vector<int> findOptimalPath(const vector<vector<int>>& edges, const vector<int>&
     }
     cout<<'\n';
     cout <<"distance:" <<dp[i_max][j_max]->distance<<'\n';
-    return dp[i_max][j_max]->route;
+    return *dp[i_max][j_max];
 }
 /**
 * @brief greedy solution with filling the assignment for each day for each tanker maximising the
@@ -150,9 +150,9 @@ void refreshEdjes(vector<vector<int>>& edjes,  set<int>& restASU) {
     }
 }
 
-vector<vector<int>> assignVehicles(const vector<vector<int>>& edjes, int vehicles, map<int, int>& freq, int Qmax, vector<int>& demand) {
+vector<State> assignVehicles(const vector<vector<int>>& edjes, int vehicles, map<int, int>& freq, int Qmax, vector<int>& demand) {
     set<int> restASU;
-    vector<vector<int>> routes;
+    vector<State> routes;
     vector<vector<int>> matrix;
     matrix.reserve(edjes.size());
     for (const auto & edje : edjes) {
@@ -164,10 +164,10 @@ vector<vector<int>> assignVehicles(const vector<vector<int>>& edjes, int vehicle
 
     bool flag = false;
     while (restASU.size() != 1) {
-        vector<int> route = findOptimalPath(edjes, demand, Qmax, restASU);
-        for (int i = 1; i < route.size(); ++i) {
-            if (--freq[route[i]] == 0) {
-                restASU.erase(restASU.find(route[i]));
+        State route = findOptimalPath(edjes, demand, Qmax, restASU);
+        for (int i = 1; i < route.route.size(); ++i) {
+            if (--freq[route.route[i]] == 0) {
+                restASU.erase(restASU.find(route.route[i]));
                 flag = true;
             }
         }
@@ -176,6 +176,9 @@ vector<vector<int>> assignVehicles(const vector<vector<int>>& edjes, int vehicle
             refreshEdjes(matrix, restASU);
             flag = false;
         }
+    }
+    for (auto& i: routes){
+        i.route.push_back(0);
     }
     return routes;
 }

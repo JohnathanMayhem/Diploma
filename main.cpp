@@ -56,7 +56,7 @@ int main() {
     freq[1] = 2;
     freq[2] = 2;
     freq[3] = 3;
-    vector<vector<int>> routes = assignVehicles(edges, 1,freq, 10, cost);
+    vector<State> routes = assignVehicles(edges, 1,freq, 10, cost);
     for (auto& i: routes){
         for (auto j: i){
             cout<<j<<" ";
