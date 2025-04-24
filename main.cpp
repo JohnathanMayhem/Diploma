@@ -56,13 +56,25 @@ int main() {
     freq[1] = 2;
     freq[2] = 2;
     freq[3] = 3;
-    vector<State> routes = assignVehicles(edges, 1,freq, 10, cost);
+    vector<vector<State*>> routes = assignVehicles(edges, 2,freq, 10, cost, 3);
+    int day = 0;
     for (auto& i: routes){
-        for (auto j: i){
-            cout<<j<<" ";
+        cout<<"day "<<day<<'\n';
+        day++;
+        for (auto& j: i){
+            for (auto k: j->route) {
+                cout<< k << " ";
+            }
         }
         cout<<"\n";
     }
+    vector<DayStates> beginSolution = vector<DayStates>(routes.size());
+    for (int i = 0; i < beginSolution.size(); ++i) {
+        DayStates d = DayStates(i, routes[i]);
+        beginSolution.push_back(d);
+    }
+
+
 
     return 0;
 }

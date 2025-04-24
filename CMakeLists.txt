@@ -3,4 +3,4 @@ project(DiplomaCpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(DiplomaCpp main.cpp PartitionLib.h Neighborhood.h)
+add_executable(DiplomaCpp main.cpp PartitionLib.h Neighborhood.h LocalSearches.h)

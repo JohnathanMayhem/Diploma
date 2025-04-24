@@ -10,6 +10,8 @@
 #include <set>
 using namespace std;
 
+
+
 struct State {
     int fuel;         // Количество топлива
     int distance;      // Пройденное расстояние
@@ -47,8 +49,24 @@ struct State {
     }
 
     ~State(){
-        delete &visited;
-        delete &route;
+
+    }
+};
+
+struct DayStates {
+    int day;
+    set<int> visited;
+    vector<State*> routes;
+
+    DayStates(int d, const vector<State*>& r): day(d) {
+        visited = set<int>();
+        routes = vector<State*>();
+        for (auto s: r) {
+            routes.push_back(s);
+            for (auto ver: s->visited) {
+                visited.insert(ver);
+            }
+        }
     }
 };
 
@@ -77,7 +95,7 @@ int findMinLengthCycle(const vector<vector<int>>& matrix,  vector<int>* vertices
     return min_weight;
 }
 
-State findOptimalPath(const vector<vector<int>>& edges, const vector<int>& demand, int Qmax, set<int>& restASU) {
+State* findOptimalPath(const vector<vector<int>>& edges, const vector<int>& demand, int Qmax, set<int>& restASU) {
     vector<int> rest(restASU.begin(), restASU.end());
     int n = rest.size()-1;
     vector<vector<State*>> dp = vector<vector<State*>>(n + 1);
@@ -115,7 +133,7 @@ State findOptimalPath(const vector<vector<int>>& edges, const vector<int>& deman
     }
     cout<<'\n';
     cout <<"distance:" <<dp[i_max][j_max]->distance<<'\n';
-    return *dp[i_max][j_max];
+    return dp[i_max][j_max];
 }
 /**
 * @brief greedy solution with filling the assignment for each day for each tanker maximising the
@@ -150,36 +168,42 @@ void refreshEdjes(vector<vector<int>>& edjes,  set<int>& restASU) {
     }
 }
 
-vector<State> assignVehicles(const vector<vector<int>>& edjes, int vehicles, map<int, int>& freq, int Qmax, vector<int>& demand) {
+vector<vector<State*>> assignVehicles(const vector<vector<int>>& edjes, int vehicles, map<int, int>& freq, int Qmax, vector<int>& demand, int horison) {
     set<int> restASU;
-    vector<State> routes;
+    vector<vector<State*>> routes;
     vector<vector<int>> matrix;
     matrix.reserve(edjes.size());
     for (const auto & edje : edjes) {
         matrix.emplace_back(edje);
     }
-    for (int i = 0; i < edjes.size(); ++i) {
-        restASU.insert(i);
-    }
+    restASU.insert(0);
 
-    bool flag = false;
-    while (restASU.size() != 1) {
-        State route = findOptimalPath(edjes, demand, Qmax, restASU);
-        for (int i = 1; i < route.route.size(); ++i) {
-            if (--freq[route.route[i]] == 0) {
-                restASU.erase(restASU.find(route.route[i]));
-                flag = true;
+    int k;
+
+    for (int day = 0; day < horison; ++day) {
+        k = vehicles;
+        for (int i = 1; i < edjes.size(); ++i) {
+            if (freq[i] > 0) {
+                restASU.insert(i);
             }
         }
-        routes.push_back(route);
-        if (flag) {
+        vector<State*> routesDay;
+        while (restASU.size() != 1 && k > 0) {
+            State* route = findOptimalPath(edjes, demand, Qmax, restASU);
+            for (int i = 1; i < route->route.size(); ++i) {
+                --freq[route->route[i]];
+                restASU.erase(restASU.find(route->route[i]));
+
+            }
+            routesDay.push_back(route);
             refreshEdjes(matrix, restASU);
-            flag = false;
         }
+        for (auto& i: routesDay){
+            i->route.push_back(0);
+        }
+        routes.push_back(routesDay);
     }
-    for (auto& i: routes){
-        i.route.push_back(0);
-    }
+
     return routes;
 }
 
